@@ -1,14 +1,13 @@
 /*
- * @Descripttion: 
- * @version: 
+ * @Descripttion: main.cpp
+ * @version: 0.1
  * @Author: ybzhang
  * @Date: 2020-12-21 17:25:59
  * @LastEditors: ybzhang
- * @LastEditTime: 2020-12-21 19:45:17
+ * @LastEditTime: 2020-12-21 20:09:12
  */
-#include <stdio.h>
-#include <iostream>
-#include <string>
+#include"common.h"
+#include"turing_machine.h"
 using namespace std;
 
 string HELP_OUTPUT = "usage: turing [-v|--verbose] [-h|--help] <tm> <input>";
@@ -23,7 +22,6 @@ int main(int argc, char **argv)
 
     if(argc == 1)
         cout<<HELP_OUTPUT<<endl;
-        //fprintf(stdout, "%s\n", HELP_OUTPUT);
     else
     {
         for(int i = 1; i < argc;i++)
@@ -70,5 +68,8 @@ int main(int argc, char **argv)
             }
         }
     }
+
+    TuringMachine tm;
+    tm.read_tm(tm_file);
     return 0;
 }
