@@ -1,10 +1,10 @@
 /*
- * @Descripttion: main.cpp
+ * @Description: main.cpp
  * @version: 0.1
  * @Author: ybzhang
  * @Date: 2020-12-21 17:25:59
  * @LastEditors: ybzhang
- * @LastEditTime: 2020-12-21 20:09:12
+ * @LastEditTime: 2020-12-22 14:38:46
  */
 #include"common.h"
 #include"turing_machine.h"
@@ -47,7 +47,7 @@ int main(int argc, char **argv)
                 if(tm_file=="")
                 {
                     int len = arg.length();
-                    cout<<len<<endl;
+                    //cout<<len<<endl;
                     if(len>3&&arg.substr(len-3,len)==".tm")
                         tm_file = arg;
                     else
@@ -69,7 +69,6 @@ int main(int argc, char **argv)
         }
     }
 
-    TuringMachine tm;
-    tm.read_tm(tm_file);
+    TuringMachine tm(tm_file, verbose);
     return 0;
 }
