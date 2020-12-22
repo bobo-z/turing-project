@@ -4,14 +4,19 @@
  * @Author: ybzhang
  * @Date: 2020-12-21 19:52:33
  * @LastEditors: ybzhang
- * @LastEditTime: 2020-12-21 20:30:09
+ * @LastEditTime: 2020-12-22 14:14:38
  */
 #include"common.h"
+#include"turing_machine.h"
+using namespace std;
 
+string FILE_CANNOT_OPEN = "file open error";
 
-TuringMachine::read_tm(string filename)
+int TuringMachine::read_tm(string filename)
 {
     ifstream f(filename);
+
+    //f.open();
 
     if(!f.is_open())
     {
@@ -26,5 +31,6 @@ TuringMachine::read_tm(string filename)
             cout<<tmp<<endl;
         }
     }
-    f.close()
+    f.close();
+    return 0;
 }

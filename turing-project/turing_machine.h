@@ -4,14 +4,12 @@
  * @Author: ybzhang
  * @Date: 2020-12-21 20:05:37
  * @LastEditors: ybzhang
- * @LastEditTime: 2020-12-21 20:24:21
+ * @LastEditTime: 2020-12-22 14:06:27
  */
 #include "common.h"
 using namespace std;
 #ifndef _TURING_MACHINE_H_
 #define _TURING_MACHINE_H_
-
-string FILE_CANNOT_OPEN = "file open error";
 
 class TuringMachine
 {
