@@ -4,7 +4,7 @@
  * @Author: ybzhang
  * @Date: 2020-12-21 19:52:33
  * @LastEditors: ybzhang
- * @LastEditTime: 2020-12-23 21:14:39
+ * @LastEditTime: 2020-12-23 21:46:28
  */
 #include"common.h"
 #include"turing_machine.h"
@@ -78,7 +78,7 @@ void TuringMachine::Error(vector<string> err_str, int error_code)
             {
                 cerr << error_line << endl
                      << "error: \""
-                     << filename << "\"cannot open. Please check the file name and try again."  << endl;
+                     << filename << "\" cannot open. Please check the file name and try again."  << endl;
             }
             break;
         case 2:
@@ -88,7 +88,7 @@ void TuringMachine::Error(vector<string> err_str, int error_code)
                 cerr << error_line << endl
                      << "error: Incomplete definition format in file '" << filename << "' at line " << line_cnt << endl
                      << "\t" << reading_line << endl
-                     << "Please check the format:" << endl
+                     << "Please check the defination format:" << endl
                      << "<variable><=><value>\t(One Space separated)" << endl;
             }
             break;
@@ -107,7 +107,7 @@ void TuringMachine::Error(vector<string> err_str, int error_code)
             if(verbose)
             {
                 cerr << error_line << endl
-                     << "error: Assignment failed because of invalid state: " << err_str[0] << "' in file '" << filename << "' at line " << line_cnt << endl
+                     << "error: Assignment failed because of invalid state: '" << err_str[0] << "' in file '" << filename << "' at line " << line_cnt << endl
                      << "\t" << reading_line << endl
                      << "Please make sure the " << err_str[1] << " is in the total states" << endl;
             }
@@ -117,7 +117,7 @@ void TuringMachine::Error(vector<string> err_str, int error_code)
             if(verbose)
             {
                 cerr << error_line << endl
-                     << "error: Invalid "<<err_str[1]<<" character '" << err_str[0] << "' in file '" << filename << "''"
+                     << "error: Invalid "<<err_str[1]<<" character '" << err_str[0] << "' in file '" << filename 
                      << "' at line " << line_cnt << endl
                      << "\t" << reading_line << endl
                      <<err_str[1]<< " character contain ONLY ONE character" << endl;
@@ -128,7 +128,7 @@ void TuringMachine::Error(vector<string> err_str, int error_code)
             if(verbose)
             {
                 cerr << error_line << endl
-                     << "error: Invalid tape number '" << err_str[0] << "' in file '" << filename << "''"
+                     << "error: Invalid tape number '" << err_str[0] << "' in file '" << filename
                      << "' at line " << line_cnt << endl
                      << "\t" << reading_line << endl
                      << "Tape number should be a NUMBER" << endl;
@@ -140,7 +140,7 @@ void TuringMachine::Error(vector<string> err_str, int error_code)
             {
                 cerr << error_line << endl
                      << "error: Transition function definition error"
-                     << " in file '" << filename << "''"
+                     << " in file '" << filename 
                      << "' at line " << line_cnt << endl
                      << "\t" << reading_line << endl
                      << "Please check the format: " << endl
@@ -163,9 +163,6 @@ void TuringMachine::Error(vector<string> err_str, int error_code)
             {
                 cerr << error_line << endl
                      << "error: Status match error."
-                     << " in file '" << filename << "''"
-                     << "' at line " << line_cnt << endl
-                     << "\t" << reading_line << endl
                      << "Status '" << err_str[0] << "' does not match any trans function" << endl;
             }
             break;
@@ -194,6 +191,7 @@ void TuringMachine::Error(vector<string> err_str, int error_code)
                 cerr << error_line << endl
                      << "error: " << err_str[0] <<err_str[1]<< "' should be " << nTape << " characters" << endl;
             }
+            break;
         case 14:
         cerr << SYNTAX_ERROR << endl;
             if(verbose)
@@ -220,8 +218,11 @@ TuringMachine::TuringMachine(string fname, bool v)
 
     filename = fname;
     verbose = v;
-    line_cnt = 0;
+    line_cnt = 1;
+    nTape = 0;
     reading_line = "";
+    start_state = "";
+    blank = '_';
 
     ifstream f(filename);
 
@@ -294,7 +295,7 @@ TuringMachine::TuringMachine(string fname, bool v)
                         {
                             auto find_it = states.find(*it);
                             if(find_it == states.end())
-                                Error({*find_it, "final_state"}, STATE_MISS);
+                                Error({*it, "final_state"}, STATE_MISS);
                         }
                         break;
                     case 'N':
@@ -327,7 +328,9 @@ TuringMachine::TuringMachine(string fname, bool v)
                 if(tokens[3].length()!=nTape)
                     Error({"<Move_tape> '", tokens[3]}, CHAR_NUM_ERR);
                 Action a(tokens[2], tokens[3], tokens[4]);
-                auto find_it = transitions.find("")
+                auto find_it = transitions.find(tokens[0]);
+                if(find_it==transitions.end())
+                     Error({tokens[0], "current_state"}, STATE_MISS);
                 find_it->second.insert(pair<string, Action>(tokens[1], a));
             }
             line_cnt += 1;
@@ -422,13 +425,11 @@ void TuringMachine::Spilt(string val, set<string> &words, char type)
         if(*i==',')
         {
             if(temp == "")
-                Error({i_str}, INVALID_CHAR);
-            if(type == 'S' )
-                if(temp.length()>1)
-                    Error({i_str,"Input symbol"}, NOT_CHAR);
-            else if(type == 'G')
-                if(temp.length()>1)
-                    Error({i_str,"Alphabet"}, NOT_CHAR);
+                Error({","}, INVALID_CHAR);
+            if(type == 'S'&&temp.length()>1)
+                Error({temp, "Input symbol"}, NOT_CHAR);
+            if(type == 'G'&&temp.length()>1)
+                Error({temp, "Alphabet"}, NOT_CHAR);
             words.insert(temp);
             temp = "";
         }
@@ -441,13 +442,11 @@ void TuringMachine::Spilt(string val, set<string> &words, char type)
         }
     }
     if(temp == "")
-        Error({i_str}, INVALID_CHAR);
-    if(type == 'S' )
-        if(temp.length()>1)
-            Error({i_str,"Input symbol"}, NOT_CHAR);
-    else if(type == 'G')
-        if(temp.length()>1)
-            Error({i_str,"Alphabet"}, NOT_CHAR);
+        Error({","}, INVALID_CHAR);
+    if(type == 'S'&&temp.length()>1)
+        Error({temp, "Input symbol"}, NOT_CHAR);
+    if(type == 'G'&&temp.length()>1)
+        Error({i_str, "Alphabet"}, NOT_CHAR);
     words.insert(temp);//重复插入不会崩溃
 }
 
@@ -559,7 +558,7 @@ void TuringMachine::run(string input)
     for (auto i = input.begin(); i != input.end();i++)
     {
         auto it = input_char.find(*i);
-        if(it == input_char.end)
+        if(it == input_char.end())
         {
             string tmp = "";
             tmp = tmp + *i;
@@ -603,9 +602,9 @@ void TuringMachine::run(string input)
             Error({current_symbol, "current_symbol"}, STATUS_MISS);
         Action a = action_it->second;
         MoveWrite(a.direction, a.write);
-        auto trans_it = states.find(a.next);//TODO: check
-        if(trans_it == states.end())
-            Error({a.next_state, "next_state"}, STATE_MISS);
+        auto next_it = states.find(a.next);//TODO: check
+        if(next_it == states.end())
+            Error({a.next, "next_state"}, STATE_MISS);
         current_state = a.next;
     }
 }
@@ -619,7 +618,7 @@ void TuringMachine::run(string input)
  */
 void TuringMachine::MoveWrite(string dir, string input)//move all tape headers and write
 {
-    assert(dir.length() == nTape && ainput.length() == nTape);
+    assert(dir.length() == nTape && input.length() == nTape);
     for(int i = 0; i < nTape;i++)
     {
         *heads[i] = input[i];
