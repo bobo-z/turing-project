@@ -4,7 +4,7 @@
  * @Author: ybzhang
  * @Date: 2020-12-21 19:52:33
  * @LastEditors: ybzhang
- * @LastEditTime: 2020-12-23 10:37:53
+ * @LastEditTime: 2020-12-23 16:40:57
  */
 #include"common.h"
 #include"turing_machine.h"
@@ -83,6 +83,9 @@ TuringMachine::TuringMachine(string fname, bool v)
     {
         string tmp;
         stringstream ss;
+        vector<string> tokens;
+        map<string, Action> actions;
+        string current_state = "";
         while(getline(f,tmp))
         {
             //可能会有行内注释
@@ -103,6 +106,8 @@ TuringMachine::TuringMachine(string fname, bool v)
                         if(value.back()!='}')
                             SyntaxError("}", 3);
                         Spilt(value.substr(1, value.length() - 2), states, 'Q');
+                        for(auto i=states.begin(); i!=states.end();i++)
+                            transitions.insert(pair<string, map<string, Action>>(*i, actions));
                         break;
                     case 'S':
                         if(value[0] != '{')
@@ -120,7 +125,7 @@ TuringMachine::TuringMachine(string fname, bool v)
                         break;
                     case 'B':
                         if(value.length()==1&&IsValid(value[0],'B'))
-                            blank = value;
+                            blank = value[0];
                         else
                             SyntaxError(value, 2);
                         break;
@@ -137,12 +142,17 @@ TuringMachine::TuringMachine(string fname, bool v)
                         break;
                     default:
                         assert(tmp[1] == 'q' && tmp[2] == '0');
+                        start_state = value;
                         break;
                 }
             }
-            else
+            else//transition function
             {
-
+                tokens.clear();
+                TokenSpilt(tmp, tokens);
+                Action a(tokens[2], tokens[3], tokens[4]);
+                auto it = transitions.find(tokens[0]);
+                it->second.insert(pair<string, Action>(tokens[1], a));
             }
             line_cnt += 1;
         }
@@ -322,4 +332,94 @@ bool TuringMachine::IsValid(string str, char type)
             return false;
     }
     return true;
+}
+
+void TuringMachine::TokenSpilt(string str, vector<string>& tokens)
+{
+    string temp;
+    for(auto i=str.begin();i!=str.end();i++)
+    {
+        if(*i==' ')
+        {
+            tokens.push_back(temp);
+            temp = "";
+        }
+        else
+            temp = temp + *i;
+    }
+    tokens.push_back(temp);
+}
+
+void TuringMachine::run(string input)
+{
+    for (int i = 0; i < nTape;i++)
+    {
+        list<char> tape(1, ' ');
+        tapes.push_back(tape);
+        heads.push_back(tapes[i].begin());
+    }
+    tapes[0].clear();
+    for (auto i = input.begin(); i != input.end();i++)
+        tapes[0].push_back(*i);
+    heads[0]=tapes[0].begin();
+    string current_state = start_state;
+    while(true)
+    {
+        auto it = final_states.find(current_state);
+        if(it != final_states.end())//halt
+        {
+            tapes[0].remove(blank);
+            for(auto i=tapes[0].begin(); i!=tapes[0].end();i++)
+                cout << *i;
+            return;
+        }
+        auto trans_it = transitions.find(current_state);//TODO: check
+        string current_symbol = "";
+        for (int i = 0; i < nTape;i++)
+        {
+            char ch = *heads[i];
+            if(ch == ' ')
+                ch = blank;
+            current_symbol = current_symbol + ch;
+        }
+        auto action_it = trans_it->second.find(current_symbol);//TODO check
+        Action a = action_it->second;
+        MoveWrite(a.direction, a.write);
+        current_state = a.next;
+    }
+}
+
+void TuringMachine::MoveWrite(string dir, string input)//move all tape headers and write
+{
+    assert(dir.length() == nTape);
+    for(int i = 0; i < nTape;i++)
+    {
+        *heads[i] = input[i];
+        switch(dir[i])
+        {
+            case 'l':
+                if(heads[i]==tapes[i].begin())
+                {
+                    tapes[i].push_front(' ');
+                    heads[i]--;
+                }
+                else
+                    heads[i]--;
+                break;
+            case 'r':
+                if(heads[i]==--tapes[i].end())
+                {
+                    tapes[i].push_back(' ');
+                    heads[i]++;
+                }
+                else
+                    heads[i]++;
+                break;
+            case '*':
+                break;
+            default:
+                assert(0);
+                break;
+        }
+    }
 }

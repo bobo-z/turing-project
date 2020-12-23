@@ -4,7 +4,7 @@
  * @Author: ybzhang
  * @Date: 2020-12-21 19:57:07
  * @LastEditors: ybzhang
- * @LastEditTime: 2020-12-23 09:50:23
+ * @LastEditTime: 2020-12-23 16:01:02
  */
 #ifndef __COMMON_H
 #define __COMMON_H
@@ -18,6 +18,8 @@
 
 #include <vector>
 #include <set>
+#include <map>
+#include <list>
 
 
 #endif

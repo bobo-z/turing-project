@@ -4,7 +4,7 @@
  * @Author: ybzhang
  * @Date: 2020-12-21 17:25:59
  * @LastEditors: ybzhang
- * @LastEditTime: 2020-12-22 14:38:46
+ * @LastEditTime: 2020-12-23 16:05:54
  */
 #include"common.h"
 #include"turing_machine.h"
@@ -70,5 +70,6 @@ int main(int argc, char **argv)
     }
 
     TuringMachine tm(tm_file, verbose);
+    tm.run(input_str);
     return 0;
 }
