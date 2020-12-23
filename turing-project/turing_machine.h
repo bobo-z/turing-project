@@ -4,7 +4,7 @@
  * @Author: ybzhang
  * @Date: 2020-12-21 20:05:37
  * @LastEditors: ybzhang
- * @LastEditTime: 2020-12-23 21:13:09
+ * @LastEditTime: 2020-12-24 00:26:13
  */
 #include "common.h"
 #ifndef _TURING_MACHINE_H_
@@ -21,6 +21,17 @@ struct Action
         write = w;
         direction = d;
     };
+};
+
+struct Cell
+{
+    int index;
+    char symbol;
+    Cell(int i, char s)
+    {
+        index = i;
+        symbol = s;
+    }
 };
 
 class TuringMachine
@@ -40,8 +51,8 @@ private:
     int nTape;
 
     map<string, map<string, Action> > transitions;//key-state  val-transition
-    vector<list<char> > tapes;
-    vector<list<char>::iterator> heads;
+    vector<list<Cell> > tapes;
+    vector<list<Cell>::iterator> heads;
 
     //argc
     string filename;
@@ -59,6 +70,7 @@ public:
     void TokenSpilt(string str, vector<string> &tokens);
     void run(string input);
     void MoveWrite(string dir, string input);
+    void Print(string current_state, int step);
 };
 
 #endif

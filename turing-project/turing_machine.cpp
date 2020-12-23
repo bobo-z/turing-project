@@ -4,7 +4,7 @@
  * @Author: ybzhang
  * @Date: 2020-12-21 19:52:33
  * @LastEditors: ybzhang
- * @LastEditTime: 2020-12-23 21:46:28
+ * @LastEditTime: 2020-12-24 01:52:09
  */
 #include"common.h"
 #include"turing_machine.h"
@@ -548,13 +548,17 @@ void TuringMachine::TokenSpilt(string str, vector<string>& tokens)
  */
 void TuringMachine::run(string input)
 {
+    if(verbose)
+        cout<<"Input: "<<input<<endl;
     for (int i = 0; i < nTape;i++)
     {
-        list<char> tape(1, ' ');
+        //Cell c(0, '_');
+        list<Cell> tape(1, Cell(0, '_'));
         tapes.push_back(tape);
         heads.push_back(tapes[i].begin());
     }
     tapes[0].clear();
+    int index = 0;
     for (auto i = input.begin(); i != input.end();i++)
     {
         auto it = input_char.find(*i);
@@ -572,18 +576,32 @@ void TuringMachine::run(string input)
                    head_pos},
                   INVALID_INPUT);
         }
-        tapes[0].push_back(*i);
+        tapes[0].push_back(Cell(index, *i));
+        index += 1;
     }
     heads[0]=tapes[0].begin();
     string current_state = start_state;
+    int step = 0;
+    if(verbose)
+        cout << run_line << endl;
     while(true)
     {
+        if(verbose)
+            Print(current_state, step);
         auto it = final_states.find(current_state);
         if(it != final_states.end())//halt
         {
-            tapes[0].remove(blank);
+            if(verbose)
+                cout << "Result: ";
             for(auto i=tapes[0].begin(); i!=tapes[0].end();i++)
-                cout << *i;
+            {
+                char ch = (*i).symbol;
+                if(ch!=blank)
+                    cout << ch;
+            }
+            cout << endl;
+            if(verbose)
+                cout << end_line << endl;
             return;
         }
         auto trans_it = transitions.find(current_state);//TODO: check
@@ -592,7 +610,7 @@ void TuringMachine::run(string input)
         string current_symbol = "";
         for (int i = 0; i < nTape;i++)
         {
-            char ch = *heads[i];
+            char ch = (*heads[i]).symbol;
             if(ch == ' ')
                 ch = blank;
             current_symbol = current_symbol + ch;
@@ -606,6 +624,7 @@ void TuringMachine::run(string input)
         if(next_it == states.end())
             Error({a.next, "next_state"}, STATE_MISS);
         current_state = a.next;
+        step += 1;
     }
 }
 
@@ -621,13 +640,14 @@ void TuringMachine::MoveWrite(string dir, string input)//move all tape headers a
     assert(dir.length() == nTape && input.length() == nTape);
     for(int i = 0; i < nTape;i++)
     {
-        *heads[i] = input[i];
+        (*heads[i]).symbol = input[i];
         switch(dir[i])
         {
             case 'l':
                 if(heads[i]==tapes[i].begin())
                 {
-                    tapes[i].push_front(' ');
+                    int index = (*heads[i]).index;
+                    tapes[i].push_front(Cell(index - 1, '_'));
                     heads[i]--;
                 }
                 else
@@ -636,7 +656,8 @@ void TuringMachine::MoveWrite(string dir, string input)//move all tape headers a
             case 'r':
                 if(heads[i]==--tapes[i].end())
                 {
-                    tapes[i].push_back(' ');
+                    int index = (*heads[i]).index;
+                    tapes[i].push_back(Cell(index + 1, '_'));
                     heads[i]++;
                 }
                 else
@@ -649,4 +670,69 @@ void TuringMachine::MoveWrite(string dir, string input)//move all tape headers a
                 break;
         }
     }
+}
+
+void TuringMachine::Print(string current_state, int step)
+{
+    cout<<"Step\t: "<<step<<endl;
+    for(int i=0; i< nTape;i++)
+    {
+        string index_str = "";
+        string tape_str = "";
+        string head_str = "";
+        bool start_output = false;
+        auto left_range = tapes[i].begin();
+        auto right_range = --tapes[i].end();
+        int l_index = 0;
+        int r_index = 0;
+
+        while(left_range!=tapes[i].end()||right_range!=tapes[i].end())
+        {
+            if(left_range!=tapes[i].end()&&((*left_range).symbol!=blank||(*left_range).index==(*heads[i]).index))
+            {
+                l_index = (*left_range).index;
+                left_range = tapes[i].end();
+            }
+            else
+                left_range++;
+            if(right_range!=tapes[i].end()&&((*right_range).symbol!=blank||(*right_range).index==(*heads[i]).index))
+            {
+                r_index = (*right_range).index;
+                right_range = tapes[i].end();
+            }
+            else
+                right_range--;
+        }
+        int output_num = r_index - l_index + 1;
+        auto it=tapes[i].begin();
+        while(output_num>0&&it!=tapes[i].end())
+        {
+            if((*it).index==l_index)
+                start_output = true;
+
+            if(start_output)
+            {
+                int index = (*it).index;
+                if(index<0)
+                    index *= -1;
+                string s_index = to_string(index);
+                int index_digit = s_index.length();
+                index_str = index_str + s_index + ' ';
+                tape_str = tape_str + (*it).symbol + string(index_digit, ' ');
+                if((*it).index == (*heads[i]).index)
+                    head_str = head_str + '^';
+                head_str = head_str + string(index_digit+1, ' ');
+                output_num--;
+            }
+            it++;
+        }
+        index_str.erase(index_str.find_last_not_of(' ') + 1);
+        tape_str.erase(tape_str.find_last_not_of(' ') + 1);
+        head_str.erase(head_str.find_last_not_of(' ') + 1);
+        cout << "Index" << i << "\t: " << index_str << endl
+             << "Tape" << i << "\t: " << tape_str << endl
+             << "Head" << i << "\t: " << head_str << endl;
+    }
+    cout << "State\t: " << current_state << endl
+         << cur_off_line << endl;
 }
