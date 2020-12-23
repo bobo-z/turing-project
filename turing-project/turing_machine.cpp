@@ -4,7 +4,7 @@
  * @Author: ybzhang
  * @Date: 2020-12-21 19:52:33
  * @LastEditors: ybzhang
- * @LastEditTime: 2020-12-22 21:41:13
+ * @LastEditTime: 2020-12-23 10:37:53
  */
 #include"common.h"
 #include"turing_machine.h"
@@ -82,6 +82,7 @@ TuringMachine::TuringMachine(string fname, bool v)
     else
     {
         string tmp;
+        stringstream ss;
         while(getline(f,tmp))
         {
             //可能会有行内注释
@@ -97,24 +98,24 @@ TuringMachine::TuringMachine(string fname, bool v)
                 switch(tmp[1])
                 {
                     case 'Q':
-                        if(value[0] != "{")
+                        if(value[0] != '{')
                             SyntaxError("{", 3);
-                        if(value.back()!="}")
-                            syntaxError("}", 3);
+                        if(value.back()!='}')
+                            SyntaxError("}", 3);
                         Spilt(value.substr(1, value.length() - 2), states, 'Q');
                         break;
                     case 'S':
-                        if(value[0] != "{")
+                        if(value[0] != '{')
                             SyntaxError("{", 3);
-                        if(value.back()!="}")
-                            syntaxError("}", 3);
+                        if(value.back()!='}')
+                            SyntaxError("}", 3);
                         Spilt(value.substr(1, value.length() - 2), input_char, 'S');
                         break;
                     case 'G':
-                        if(value[0] != "{")
+                        if(value[0] != '{')
                             SyntaxError("{", 3);
-                        if(value.back()!="}")
-                            syntaxError("}", 3);
+                        if(value.back()!='}')
+                            SyntaxError("}", 3);
                         Spilt(value.substr(1, value.length() - 2), tape_char, 'G');
                         break;
                     case 'B':
@@ -124,13 +125,15 @@ TuringMachine::TuringMachine(string fname, bool v)
                             SyntaxError(value, 2);
                         break;
                     case 'F':
-                        if(value[0] != "{")
+                        if(value[0] != '{')
                             SyntaxError("{", 3);
-                        if(value.back()!="}")
-                            syntaxError("}", 3);
+                        if(value.back()!='}')
+                            SyntaxError("}", 3);
                         Spilt(value.substr(1, value.length() - 2), final_states, 'F');
                         break;
                     case 'N':
+                        ss << value;
+                        ss >> nTape;
                         break;
                     default:
                         assert(tmp[1] == 'q' && tmp[2] == '0');
@@ -159,10 +162,10 @@ void TuringMachine::ClearComment(string& line)
     if(pos != line.npos)
     {
         line = line.erase(pos);
-        const char ch = ' ';
-        line.erase(line.find_last_not_of(ch) + 1);
-        line.erase(0,line.find_first_not_of(ch));
     }
+    const char ch = ' ';
+    line.erase(line.find_last_not_of(ch) + 1);
+    line.erase(0,line.find_first_not_of(ch));
 }
 
 
@@ -174,7 +177,7 @@ void TuringMachine::ClearComment(string& line)
  *  line_cnt: 语句所在文件行数
  * @return 分割出来的value
  */
-string TuringMachine::DefinitionAssert(string line, int line_cnt)
+string TuringMachine::DefinitionAssert(string line)
 {
     //图灵继语法由7部分构成
     //一条定义语句有变量、等号、值三部分构成
@@ -184,7 +187,7 @@ string TuringMachine::DefinitionAssert(string line, int line_cnt)
 
     int first_space = line.find_first_of(' ');
     int last_space = line.find_last_of(' ');
-    string variable = line.substr(1,first_space);
+    string variable = line.substr(1,first_space-1);
     string equal = line.substr(first_space + 1, last_space - first_space - 1);
     string value = line.substr(last_space + 1);
     
@@ -237,26 +240,35 @@ void TuringMachine::Spilt(string val, set<string> &words, char type)
     */
     //int state = 0;
     string temp = "";
-    for(auto i = val.begin(); i != val.end();i++)
+    string i_str = "";
+    for(auto i = val.begin(); i != val.end();++i,i_str.clear(),i_str.push_back(*i))
     {
-        if(*i==",")
+        //i_str.clear();
+        //i_str.push_back(*i);
+        if(*i==',')
         {
             if(temp == "")
-                SyntaxError(*i, 2);
+                SyntaxError(i_str, 2);
             if(type == 'S' || type == 'G')
                 if(temp.length()>1)
-                    SyntaxError(*i, 2);
+                    SyntaxError(i_str, 2);
             words.insert(temp);
             temp = "";
         }
         else
         {
             if(!IsValid(*i,type))
-                SyntaxError(*i, 2);
+                SyntaxError(i_str, 2);
             else
                 temp = temp + *i;
         }
     }
+    if(temp == "")
+        SyntaxError(i_str, 2);
+    if(type == 'S' || type == 'G')
+        if(temp.length()>1)
+            SyntaxError(i_str, 2);
+    words.insert(temp);
 }
 
 /**
@@ -270,9 +282,8 @@ bool TuringMachine::IsValid(char ch, char type)
     switch(type)
     {
         case 'S':case 'G':case 'B'://symbol
-            if(ch>=32 && ch<=126)
-                if (ch != ' ' && ch != ',' && ch != ';'&&ch != '{'&&ch!='}'&&ch != '*')
-                    return true;    
+            if(ch>=32 && ch<=126 &&ch != ' ' && ch != ',' && ch != ';'&&ch != '{'&&ch!='}'&&ch != '*')
+                return true;
             else
                 return false;
             break;

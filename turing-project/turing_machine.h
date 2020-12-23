@@ -4,7 +4,7 @@
  * @Author: ybzhang
  * @Date: 2020-12-21 20:05:37
  * @LastEditors: ybzhang
- * @LastEditTime: 2020-12-22 21:41:02
+ * @LastEditTime: 2020-12-23 10:03:15
  */
 #include "common.h"
 using namespace std;
@@ -26,6 +26,7 @@ private:
     set<string> input_char;//S
     set<string> tape_char;//G
     string blank;
+    int nTape;
 
     //argc
     string filename;
@@ -35,11 +36,11 @@ private:
 public:
     TuringMachine (string filename, bool verbose);
     void ClearComment(string& line);
-    string DefinitionAssert(string line,int cnt);
-    void SyntaxError(string str, int error_code)
-    void Spilt(string val, vector<string> &words, int type);
-    bool IsValid(char ch,int type);
-    bool IsValid(string str, int type);
+    string DefinitionAssert(string line);
+    void SyntaxError(string str, int error_code);
+    void Spilt(string val, set<string> &words, char type);
+    bool IsValid(char ch,char type);
+    bool IsValid(string str,char type);
 };
 
 #endif

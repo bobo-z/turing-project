@@ -4,7 +4,7 @@
  * @Author: ybzhang
  * @Date: 2020-12-21 19:57:07
  * @LastEditors: ybzhang
- * @LastEditTime: 2020-12-22 20:09:25
+ * @LastEditTime: 2020-12-23 09:50:23
  */
 #ifndef __COMMON_H
 #define __COMMON_H
@@ -14,6 +14,7 @@
 #include <fstream>
 #include <assert.h>
 #include <algorithm>
+#include <sstream>
 
 #include <vector>
 #include <set>
