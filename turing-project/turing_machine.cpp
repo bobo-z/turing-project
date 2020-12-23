@@ -4,7 +4,7 @@
  * @Author: ybzhang
  * @Date: 2020-12-21 19:52:33
  * @LastEditors: ybzhang
- * @LastEditTime: 2020-12-24 01:52:09
+ * @LastEditTime: 2020-12-24 03:35:55
  */
 #include"common.h"
 #include"turing_machine.h"
@@ -557,29 +557,32 @@ void TuringMachine::run(string input)
         tapes.push_back(tape);
         heads.push_back(tapes[i].begin());
     }
-    tapes[0].clear();
-    int index = 0;
-    for (auto i = input.begin(); i != input.end();i++)
+    if(input!="")
     {
-        auto it = input_char.find(*i);
-        if(it == input_char.end())
+        tapes[0].clear();
+        int index = 0;
+        for (auto i = input.begin(); i != input.end(); i++)
         {
-            string tmp = "";
-            tmp = tmp + *i;
-            int pos = input.find_first_of(*i);
-            string head_pos = "       ";
-            for (int i = 0; i < pos;i++)
-                head_pos = head_pos + ' ';
-            head_pos = head_pos + '^';
-            Error({tmp,
-                   input,
-                   head_pos},
-                  INVALID_INPUT);
-        }
-        tapes[0].push_back(Cell(index, *i));
-        index += 1;
+            auto it = input_char.find(*i);
+            if (it == input_char.end())
+            {
+                string tmp = "";
+                tmp = tmp + *i;
+                int pos = input.find_first_of(*i);
+                string head_pos = "       ";
+                for (int i = 0; i < pos; i++)
+                    head_pos = head_pos + ' ';
+                head_pos = head_pos + '^';
+                Error({tmp,
+                       input,
+                       head_pos},
+                      INVALID_INPUT);
+            }
+            tapes[0].push_back(Cell(index, *i));
+            index += 1;
     }
-    heads[0]=tapes[0].begin();
+        heads[0] = tapes[0].begin();
+    }
     string current_state = start_state;
     int step = 0;
     if(verbose)
