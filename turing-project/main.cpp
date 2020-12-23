@@ -4,15 +4,14 @@
  * @Author: ybzhang
  * @Date: 2020-12-21 17:25:59
  * @LastEditors: ybzhang
- * @LastEditTime: 2020-12-23 16:05:54
+ * @LastEditTime: 2020-12-23 17:49:47
  */
 #include"common.h"
 #include"turing_machine.h"
-using namespace std;
 
-string HELP_OUTPUT = "usage: turing [-v|--verbose] [-h|--help] <tm> <input>";
-string UNKNOWN_OPTION = "unknown option:";
-string UNKNOWN_COMMAND = "unknown command:";
+const char* HELP_OUTPUT = "usage: turing [-v|--verbose] [-h|--help] <tm> <input>";
+const char* UNKNOWN_OPTION = "unknown option:";
+const char* UNKNOWN_COMMAND = "unknown command:";
 
 int main(int argc, char **argv)
 {
@@ -39,7 +38,7 @@ int main(int argc, char **argv)
                 else
                 {
                     cerr << UNKNOWN_OPTION << arg << endl;
-                    exit(1);
+                    exit(10);
                 }
             }
             else//command
@@ -47,13 +46,12 @@ int main(int argc, char **argv)
                 if(tm_file=="")
                 {
                     int len = arg.length();
-                    //cout<<len<<endl;
                     if(len>3&&arg.substr(len-3,len)==".tm")
                         tm_file = arg;
                     else
                     {
                         cerr << UNKNOWN_COMMAND << arg << endl;
-                        exit(1);
+                        exit(10);
                     }
                 }
                 else if(input_str=="")
@@ -63,7 +61,7 @@ int main(int argc, char **argv)
                 else
                 {
                     cerr << UNKNOWN_COMMAND << arg << endl;
-                    exit(1);
+                    exit(10);
                 }
             }
         }

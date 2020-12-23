@@ -4,10 +4,10 @@
  * @Author: ybzhang
  * @Date: 2020-12-21 19:57:07
  * @LastEditors: ybzhang
- * @LastEditTime: 2020-12-23 16:01:02
+ * @LastEditTime: 2020-12-23 17:14:26
  */
-#ifndef __COMMON_H
-#define __COMMON_H
+#ifndef __COMMON_H_
+#define __COMMON_H_
 
 #include <iostream>
 #include <string>
@@ -21,5 +21,6 @@
 #include <map>
 #include <list>
 
+using namespace std;
 
 #endif

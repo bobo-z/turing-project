@@ -4,10 +4,9 @@
  * @Author: ybzhang
  * @Date: 2020-12-21 20:05:37
  * @LastEditors: ybzhang
- * @LastEditTime: 2020-12-23 15:34:32
+ * @LastEditTime: 2020-12-23 21:13:09
  */
 #include "common.h"
-using namespace std;
 #ifndef _TURING_MACHINE_H_
 #define _TURING_MACHINE_H_
 
@@ -34,31 +33,29 @@ private:
     //define
     set<string> states;//Q
     set<string> final_states;//F
-    set<string> input_char;//S
-    set<string> tape_char;//G
+    set<char> input_char;//S
+    set<char> tape_char;//G
     char blank;
     string start_state;
     int nTape;
 
-    //transition function
-    //map<string, Action> actions;//key-old symbol val-aciton
     map<string, map<string, Action> > transitions;//key-state  val-transition
     vector<list<char> > tapes;
     vector<list<char>::iterator> heads;
 
     //argc
     string filename;
-    //string input;
     bool verbose;
 
 public:
     TuringMachine (string filename, bool verbose);
     void ClearComment(string& line);
     string DefinitionAssert(string line);
-    void SyntaxError(string str, int error_code);
+    void Error(vector<string> err_str, int error_code);
     void Spilt(string val, set<string> &words, char type);
     bool IsValid(char ch,char type);
-    bool IsValid(string str,char type);
+    void IsValid(string str);
+    bool IsNum(string str);
     void TokenSpilt(string str, vector<string> &tokens);
     void run(string input);
     void MoveWrite(string dir, string input);

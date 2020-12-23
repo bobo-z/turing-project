@@ -4,16 +4,39 @@
  * @Author: ybzhang
  * @Date: 2020-12-21 19:52:33
  * @LastEditors: ybzhang
- * @LastEditTime: 2020-12-23 16:40:57
+ * @LastEditTime: 2020-12-23 21:14:39
  */
 #include"common.h"
 #include"turing_machine.h"
-using namespace std;
 
-string FILE_CANNOT_OPEN = "file open error";
-string SYNTAX_ERROR = "syntax error";
+//ERROR
+#define FILE_OPEN_ERROR 1
+#define INCOMPLETE_LINE 2
+#define INVALID_CHAR 3
+#define STATE_MISS 4
+#define NOT_CHAR 5
+#define NOT_NUM 6
+#define INCOMPLETE_FUNC 7
+#define CHAR_MISS 8
+#define STATUS_MISS 9
+#define COMMAND_LINE_ERROR 10
+#define INVALID_INPUT 11
+#define DEF_MISS 12
+#define CHAR_NUM_ERR 13
+#define ERR_DIR 14
 
-vector<string> Def = {"Q", "S", "G", "q0", "B", "F", "N"};//图灵机定义
+#define TRANS_FUNC_PART 5//转移方程5部分
+
+
+const char *error_line = "==================== ERR ====================";
+const char *end_line = "==================== END ====================";
+const char *run_line = "==================== RUN ====================";
+const char *cur_off_line = "---------------------------------------------";
+const char* FILE_CANNOT_OPEN = "file open error";
+const char* SYNTAX_ERROR = "syntax error";
+const char* INPUT_ERROR = "illegal input";
+
+set<string> Def = {"Q", "S", "G", "q0", "B", "F", "N"};//图灵机定义
 
 /**
  * @Description: 输出报错信息，并返回exit code
@@ -23,38 +46,166 @@ vector<string> Def = {"Q", "S", "G", "q0", "B", "F", "N"};//图灵机定义
  *  line_cnt: 文件行数
  *  error_code: 语法错误类型
  *  {
- *      1: 定义语句不完整
- *      2：含有非法字符
+ *      1: 文件打开错误（文件缺失、路径错误）
+ *      2: 定义语句不完整
+ *          定义语句需由三部分构成：变量、等号、值
+ *          变量：由'#'开始，其余部分需在Def定义之中
+ *          等号：左右两侧各有一个空格
+ *          值：有些需用大括号{}括起来
+ *      3：含有非法字符
+ *      4：赋值失败——初始或终止状态不在Q内
+ *      5：赋值失败——B的值仅能有一个字符
+ *      6：赋值失败——N的值需为数字
+ *      7：转移方程定义不完整（需由五部分构成）
+ *      8：缺少字符
+ *      9：状态匹配错误（不存在对于纸带old_symbol的转移函数
+ *      10：命令行格式错误
+ *      11:输入含有非法字符
+ *      12:定义不完整(图灵机七个部分都得有定义)
+ *      13:纸带数与操作数不吻合
+ *      14:纸带移动方向错误
+ *  必须先定义，再写转移函数
  * }
  * @return
  */
-void TuringMachine::SyntaxError(string str, int error_code)
+void TuringMachine::Error(vector<string> err_str, int error_code)
 {
-    cerr << SYNTAX_ERROR << endl;
-    if(verbose)
+    switch(error_code)
     {
-        switch(error_code)
-        {
-            case 1:
-                cerr << "ERROR: Incomplete line in file '" << filename << "' at line " << line_cnt << endl
+        case 1:
+            cerr << FILE_CANNOT_OPEN << endl;
+            if(verbose)
+            {
+                cerr << error_line << endl
+                     << "error: \""
+                     << filename << "\"cannot open. Please check the file name and try again."  << endl;
+            }
+            break;
+        case 2:
+            cerr <<SYNTAX_ERROR << endl;
+            if(verbose)
+            {
+                cerr << error_line << endl
+                     << "error: Incomplete definition format in file '" << filename << "' at line " << line_cnt << endl
                      << "\t" << reading_line << endl
-                     << "Please check the syntax format" << endl;
-                break;
-            case 2:
-                cerr << "ERROR: Invalid charactor '" << str << "' in file '" << filename << "' at line " << line_cnt << endl
-                     << "\tUnknown Turing Machine Definition Syntax" << endl
-                     << "\t" << reading_line << endl;
-                break;
-            case 3:
-                cerr << "ERROR: Incomplete definition in file '" << filename << "' at line " << line_cnt << endl
-                     << "Expected '" << str << "'" << endl
-                     << "\t" << reading_line << endl;
-                break;
-            default:
-                break;
-        }
+                     << "Please check the format:" << endl
+                     << "<variable><=><value>\t(One Space separated)" << endl;
+            }
+            break;
+        case 3:
+            cerr <<SYNTAX_ERROR << endl;
+            if(verbose)
+            {
+                cerr << error_line << endl
+                     << "error: Invalid charactor '" << err_str[0] << "' in file '" << filename << "' at line " << line_cnt << endl
+                     << "\t" << reading_line << endl
+                     << "Please check the Turing Machine symbol set" << endl;
+            }
+            break;
+        case 4:
+            cerr <<SYNTAX_ERROR << endl;
+            if(verbose)
+            {
+                cerr << error_line << endl
+                     << "error: Assignment failed because of invalid state: " << err_str[0] << "' in file '" << filename << "' at line " << line_cnt << endl
+                     << "\t" << reading_line << endl
+                     << "Please make sure the " << err_str[1] << " is in the total states" << endl;
+            }
+            break;
+        case 5:
+            cerr <<SYNTAX_ERROR << endl;
+            if(verbose)
+            {
+                cerr << error_line << endl
+                     << "error: Invalid "<<err_str[1]<<" character '" << err_str[0] << "' in file '" << filename << "''"
+                     << "' at line " << line_cnt << endl
+                     << "\t" << reading_line << endl
+                     <<err_str[1]<< " character contain ONLY ONE character" << endl;
+            }
+            break;
+        case 6:
+            cerr <<SYNTAX_ERROR << endl;
+            if(verbose)
+            {
+                cerr << error_line << endl
+                     << "error: Invalid tape number '" << err_str[0] << "' in file '" << filename << "''"
+                     << "' at line " << line_cnt << endl
+                     << "\t" << reading_line << endl
+                     << "Tape number should be a NUMBER" << endl;
+            }
+            break;
+        case 7:
+            cerr <<SYNTAX_ERROR << endl;
+            if(verbose)
+            {
+                cerr << error_line << endl
+                     << "error: Transition function definition error"
+                     << " in file '" << filename << "''"
+                     << "' at line " << line_cnt << endl
+                     << "\t" << reading_line << endl
+                     << "Please check the format: " << endl
+                     << "<Current_state><Scanned_symbol><Print_symbol><Move_tape><Next_state>\t(Space separated)" << endl;
+            }
+            break;
+        case 8:
+            cerr <<SYNTAX_ERROR << endl;
+            if(verbose)
+            {
+                cerr << error_line << endl
+                     << "error: Incomplete line in file '" << filename << "' at line " << line_cnt << endl
+                     << "\t" << reading_line << endl
+                     << "Expected " << err_str[0] << endl;
+            }
+            break;
+        case 9:
+            cerr <<SYNTAX_ERROR << endl;
+            if(verbose)
+            {
+                cerr << error_line << endl
+                     << "error: Status match error."
+                     << " in file '" << filename << "''"
+                     << "' at line " << line_cnt << endl
+                     << "\t" << reading_line << endl
+                     << "Status '" << err_str[0] << "' does not match any trans function" << endl;
+            }
+            break;
+        case 11:      
+            if(verbose)
+            {
+                cerr << error_line << endl
+                     << "error: '" << err_str[0] << "' was not declared in the set of input symbols" << endl
+                     << "Input: " << err_str[1] << endl
+                     << err_str[2] << endl;
+            }
+            else
+                cerr <<INPUT_ERROR << endl;
+            break;
+        case 12:
+            cerr <<SYNTAX_ERROR << endl;
+            if(verbose)
+            {
+                cerr << error_line << endl
+                     << "error: " << err_str[0] << err_str[1] << "Undefined." << endl;
+            }
+        case 13:
+            cerr << SYNTAX_ERROR << endl;
+            if(verbose)
+            {
+                cerr << error_line << endl
+                     << "error: " << err_str[0] <<err_str[1]<< "' should be " << nTape << " characters" << endl;
+            }
+        case 14:
+        cerr << SYNTAX_ERROR << endl;
+            if(verbose)
+            {
+                cerr << error_line << endl
+                     << "error: tape can be only moved to l,r,*"<< endl;
+            }
+        default:
+            break;
     }
-    exit(1);
+    cerr << end_line << endl;
+    exit(error_code);
 }
 
 /**
@@ -76,8 +227,7 @@ TuringMachine::TuringMachine(string fname, bool v)
 
     if(!f.is_open())
     {
-        cerr <<"\""<<filename<<"\""<< FILE_CANNOT_OPEN << endl;
-        exit(1);
+        Error({}, FILE_OPEN_ERROR);
     }
     else
     {
@@ -85,13 +235,13 @@ TuringMachine::TuringMachine(string fname, bool v)
         stringstream ss;
         vector<string> tokens;
         map<string, Action> actions;
+        set<string> temp_set;
         string current_state = "";
         while(getline(f,tmp))
         {
             //可能会有行内注释
             reading_line = tmp;
             ClearComment(tmp);
-            //cout<<tmp<<endl;
             if(tmp == "")
             //do nothing
                 ;
@@ -102,46 +252,62 @@ TuringMachine::TuringMachine(string fname, bool v)
                 {
                     case 'Q':
                         if(value[0] != '{')
-                            SyntaxError("{", 3);
+                            Error({"'{'"}, CHAR_MISS);
                         if(value.back()!='}')
-                            SyntaxError("}", 3);
+                            Error({"'}'"}, CHAR_MISS);
                         Spilt(value.substr(1, value.length() - 2), states, 'Q');
                         for(auto i=states.begin(); i!=states.end();i++)
                             transitions.insert(pair<string, map<string, Action>>(*i, actions));
                         break;
                     case 'S':
                         if(value[0] != '{')
-                            SyntaxError("{", 3);
+                            Error({"'{'"}, CHAR_MISS);
                         if(value.back()!='}')
-                            SyntaxError("}", 3);
-                        Spilt(value.substr(1, value.length() - 2), input_char, 'S');
+                            Error({"'}'"}, CHAR_MISS);
+                        Spilt(value.substr(1, value.length() - 2), temp_set, 'S');
+                        for (auto i = temp_set.begin(); i != temp_set.end();i++)
+                            input_char.insert((*i)[0]);
+                        temp_set.clear();
                         break;
                     case 'G':
                         if(value[0] != '{')
-                            SyntaxError("{", 3);
+                            Error({"'{'"}, CHAR_MISS);
                         if(value.back()!='}')
-                            SyntaxError("}", 3);
-                        Spilt(value.substr(1, value.length() - 2), tape_char, 'G');
+                            Error({"'}'"}, CHAR_MISS);
+                        Spilt(value.substr(1, value.length() - 2), temp_set, 'G');
+                        for (auto i = temp_set.begin(); i != temp_set.end();i++)
+                            tape_char.insert((*i)[0]);
+                        temp_set.clear();
                         break;
                     case 'B':
-                        if(value.length()==1&&IsValid(value[0],'B'))
-                            blank = value[0];
-                        else
-                            SyntaxError(value, 2);
+                        if(value!="_")
+                            Error({value}, INVALID_CHAR);
+                        blank = '_';
                         break;
                     case 'F':
                         if(value[0] != '{')
-                            SyntaxError("{", 3);
+                            Error({"'{'"}, CHAR_MISS);
                         if(value.back()!='}')
-                            SyntaxError("}", 3);
+                            Error({"'}'"}, CHAR_MISS);
                         Spilt(value.substr(1, value.length() - 2), final_states, 'F');
+                        for (auto it = final_states.begin();it!=final_states.end();it++)
+                        {
+                            auto find_it = states.find(*it);
+                            if(find_it == states.end())
+                                Error({*find_it, "final_state"}, STATE_MISS);
+                        }
                         break;
                     case 'N':
+                        if(!IsNum(value))
+                            Error({value}, NOT_NUM);
                         ss << value;
                         ss >> nTape;
                         break;
                     default:
                         assert(tmp[1] == 'q' && tmp[2] == '0');
+                        auto find_it = states.find(value);
+                        if(find_it == states.end())
+                            Error({value, "start_state"}, STATE_MISS);
                         start_state = value;
                         break;
                 }
@@ -150,9 +316,19 @@ TuringMachine::TuringMachine(string fname, bool v)
             {
                 tokens.clear();
                 TokenSpilt(tmp, tokens);
+                if(tokens.size()!=TRANS_FUNC_PART)
+                    Error({}, INCOMPLETE_FUNC);
+                if(tokens[1].length()!=nTape)
+                    Error({"<Scanned_symbol> '", tokens[1]}, CHAR_NUM_ERR);
+                IsValid(tokens[1]);
+                if(tokens[2].length()!=nTape)
+                    Error({"<Print_symbol> '", tokens[2]}, CHAR_NUM_ERR);
+                IsValid(tokens[2]);
+                if(tokens[3].length()!=nTape)
+                    Error({"<Move_tape> '", tokens[3]}, CHAR_NUM_ERR);
                 Action a(tokens[2], tokens[3], tokens[4]);
-                auto it = transitions.find(tokens[0]);
-                it->second.insert(pair<string, Action>(tokens[1], a));
+                auto find_it = transitions.find("")
+                find_it->second.insert(pair<string, Action>(tokens[1], a));
             }
             line_cnt += 1;
         }
@@ -178,8 +354,6 @@ void TuringMachine::ClearComment(string& line)
     line.erase(0,line.find_first_not_of(ch));
 }
 
-
-
 /**
  * @Description: Check the syntax of definition line
  * @param
@@ -189,7 +363,7 @@ void TuringMachine::ClearComment(string& line)
  */
 string TuringMachine::DefinitionAssert(string line)
 {
-    //图灵继语法由7部分构成
+    //图灵机语法由7部分构成
     //一条定义语句有变量、等号、值三部分构成
     bool variable_exist = false;
     bool equal_exist = false;
@@ -205,22 +379,22 @@ string TuringMachine::DefinitionAssert(string line)
     //空格数<2时
     if(first_space == last_space)
     {
-        SyntaxError("", 1);
+        Error({}, INCOMPLETE_LINE);
     }
 
     while(!variable_exist||!equal_exist||!value_exist)
     {
         if(!variable_exist)
         {
-            auto it = find(Def.begin(), Def.end(), variable);
+            auto it = Def.find(variable);
             if(it == Def.end())//图灵机语法有且仅有7部分
-                SyntaxError(variable,2);
+                Error({variable},INVALID_CHAR);
             variable_exist = true;
         }
         else if(variable_exist && !equal_exist)
         {
             if(equal != "=")
-                SyntaxError(equal,2);
+                Error({equal},INVALID_CHAR);
             equal_exist = true;
         }
         else if(variable_exist && equal_exist && !value_exist)
@@ -230,8 +404,6 @@ string TuringMachine::DefinitionAssert(string line)
     }
     return value;
 }
-
-
 
 /**
  * @Description: spilt the string into a set
@@ -243,42 +415,40 @@ string TuringMachine::DefinitionAssert(string line)
  */
 void TuringMachine::Spilt(string val, set<string> &words, char type)
 {
-    /*state:
-    0   stop
-    1   read
-    2   continue
-    */
-    //int state = 0;
     string temp = "";
     string i_str = "";
     for(auto i = val.begin(); i != val.end();++i,i_str.clear(),i_str.push_back(*i))
     {
-        //i_str.clear();
-        //i_str.push_back(*i);
         if(*i==',')
         {
             if(temp == "")
-                SyntaxError(i_str, 2);
-            if(type == 'S' || type == 'G')
+                Error({i_str}, INVALID_CHAR);
+            if(type == 'S' )
                 if(temp.length()>1)
-                    SyntaxError(i_str, 2);
+                    Error({i_str,"Input symbol"}, NOT_CHAR);
+            else if(type == 'G')
+                if(temp.length()>1)
+                    Error({i_str,"Alphabet"}, NOT_CHAR);
             words.insert(temp);
             temp = "";
         }
         else
         {
             if(!IsValid(*i,type))
-                SyntaxError(i_str, 2);
+                Error({i_str}, INVALID_CHAR);
             else
                 temp = temp + *i;
         }
     }
     if(temp == "")
-        SyntaxError(i_str, 2);
-    if(type == 'S' || type == 'G')
+        Error({i_str}, INVALID_CHAR);
+    if(type == 'S' )
         if(temp.length()>1)
-            SyntaxError(i_str, 2);
-    words.insert(temp);
+            Error({i_str,"Input symbol"}, NOT_CHAR);
+    else if(type == 'G')
+        if(temp.length()>1)
+            Error({i_str,"Alphabet"}, NOT_CHAR);
+    words.insert(temp);//重复插入不会崩溃
 }
 
 /**
@@ -291,7 +461,13 @@ bool TuringMachine::IsValid(char ch, char type)
 {
     switch(type)
     {
-        case 'S':case 'G':case 'B'://symbol
+        case 'S':
+            if(ch>=32 && ch<=126 &&ch != ' ' && ch != ',' && ch != ';'&&ch != '{'&&ch!='}'&&ch != '*'&&ch != '_')
+                return true;
+            else
+                return false;
+            break;
+        case 'G':case 'B'://symbol
             if(ch>=32 && ch<=126 &&ch != ' ' && ch != ',' && ch != ';'&&ch != '{'&&ch!='}'&&ch != '*')
                 return true;
             else
@@ -315,25 +491,40 @@ bool TuringMachine::IsValid(char ch, char type)
     
 }
 
+void TuringMachine::IsValid(string str)
+{
+    string tmp = "";
+    for(auto i = str.begin(); i != str.end();i++)
+    {
+        auto find_it = tape_char.find(*i);
+        if(find_it==tape_char.end())
+        {
+            tmp = tmp + *i;
+            Error({tmp}, INVALID_CHAR);
+        }
+    }
+}
 /**
  * @Description: whether the given string is valid
  * @param 
  *  ch: 
  * @return true/false
  */
-bool TuringMachine::IsValid(string str, char type)
+bool TuringMachine::IsNum(string str)
 {
-    if(str=="")
-        return false;
     for(auto i=str.begin();i!=str.end();i++)
-    {
-        char ch = *i;
-        if(!IsValid(ch, type))
+        if(*i>'9'||*i<'0')
             return false;
-    }
     return true;
 }
 
+/**
+ * @Description: Spilt a line seperated by space
+ * @param
+ *  str: the given string
+ *  tokens: store the tokens into the vector
+ * @return void
+ */
 void TuringMachine::TokenSpilt(string str, vector<string>& tokens)
 {
     string temp;
@@ -350,6 +541,12 @@ void TuringMachine::TokenSpilt(string str, vector<string>& tokens)
     tokens.push_back(temp);
 }
 
+/**
+ * @Description: run the turing machine
+ * @param
+ *  input: the input string
+ * @return void
+ */
 void TuringMachine::run(string input)
 {
     for (int i = 0; i < nTape;i++)
@@ -360,7 +557,24 @@ void TuringMachine::run(string input)
     }
     tapes[0].clear();
     for (auto i = input.begin(); i != input.end();i++)
+    {
+        auto it = input_char.find(*i);
+        if(it == input_char.end)
+        {
+            string tmp = "";
+            tmp = tmp + *i;
+            int pos = input.find_first_of(*i);
+            string head_pos = "       ";
+            for (int i = 0; i < pos;i++)
+                head_pos = head_pos + ' ';
+            head_pos = head_pos + '^';
+            Error({tmp,
+                   input,
+                   head_pos},
+                  INVALID_INPUT);
+        }
         tapes[0].push_back(*i);
+    }
     heads[0]=tapes[0].begin();
     string current_state = start_state;
     while(true)
@@ -374,6 +588,8 @@ void TuringMachine::run(string input)
             return;
         }
         auto trans_it = transitions.find(current_state);//TODO: check
+        if(trans_it == transitions.end())
+            Error({current_state, "current_state"}, STATE_MISS);
         string current_symbol = "";
         for (int i = 0; i < nTape;i++)
         {
@@ -383,15 +599,27 @@ void TuringMachine::run(string input)
             current_symbol = current_symbol + ch;
         }
         auto action_it = trans_it->second.find(current_symbol);//TODO check
+        if(action_it == trans_it->second.end())
+            Error({current_symbol, "current_symbol"}, STATUS_MISS);
         Action a = action_it->second;
         MoveWrite(a.direction, a.write);
+        auto trans_it = states.find(a.next);//TODO: check
+        if(trans_it == states.end())
+            Error({a.next_state, "next_state"}, STATE_MISS);
         current_state = a.next;
     }
 }
 
+/**
+ * @Description: write on the tape and move the header
+ * @param 
+ *  dir:move direction
+ *  input: write input to the tapes
+ * @return void
+ */
 void TuringMachine::MoveWrite(string dir, string input)//move all tape headers and write
 {
-    assert(dir.length() == nTape);
+    assert(dir.length() == nTape && ainput.length() == nTape);
     for(int i = 0; i < nTape;i++)
     {
         *heads[i] = input[i];
@@ -418,7 +646,7 @@ void TuringMachine::MoveWrite(string dir, string input)//move all tape headers a
             case '*':
                 break;
             default:
-                assert(0);
+                Error({}, ERR_DIR);
                 break;
         }
     }
