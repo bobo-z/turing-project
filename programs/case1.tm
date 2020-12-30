@@ -1,3 +1,25 @@
+;This program is to check if the input string is in the Language of L1={a^i b^j a^i b^j | i,j>0}
+;Input: a string of a's and b's, e.g."aabbaabb"
+
+;To check if the string is in the Language of L1, there are two steps:
+;Step1: Check if the string is in the form of {a^* b^* a^* b^*} e.g. aabab
+;   in start_state: if the first char is 'a',start the turing machine
+                    ;if the first char is 'b',reject
+                    ;if the input is empty, accept
+; there are four parts of the string {a^* b^* a^* b^*}
+; while reading the input string, there are four states:1a, 1b, 2a, 2b.
+; when the program is reading the first part(1st a^*), it's in state 1a
+; when the program is reading the second part(1st b^*), it's in state 1b 
+; when the program is reading the third part(2nd a^*), it's in state 2a
+; when the program is reading the fourth part(2nd b^*), it's in state 2b
+; when in state 1a&1b, copy the string to 2nd tape;when in state 2a&2b, copy the string to 3rd tape
+
+;Step2: Check if i==j, that's to check if the string on 2nd tape equals to the string on 3rd tape
+; in state cmp, from the left to the right, scan the 2nd and 3rd tape in the same time
+; if the symbols are the same, empty this cell and move on until the both tapes are empty->accept
+; if the symbols aren't the same -> reject
+
+
 #Q = {0,1a,1b,2a,2b,cmp,accept,accept2,accept3,accept4,halt_accept,reject,reject2,reject3,reject4,reject5,halt_reject}
 
 #S = {a,b}
@@ -17,7 +39,7 @@
 0 b__ b__ *** reject
 0 ___ ___ *** accept
 
-; 1a
+; State 1a: while 
 1a a__ _a_ rr* 1a
 1a b__ _b_ rr* 1b
 1a ___ ___ *** reject
