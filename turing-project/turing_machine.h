@@ -4,7 +4,7 @@
  * @Author: ybzhang
  * @Date: 2020-12-21 20:05:37
  * @LastEditors: ybzhang
- * @LastEditTime: 2020-12-24 00:26:13
+ * @LastEditTime: 2020-12-30 11:03:41
  */
 #include "common.h"
 #ifndef _TURING_MACHINE_H_
@@ -68,9 +68,10 @@ public:
     void IsValid(string str);
     bool IsNum(string str);
     void TokenSpilt(string str, vector<string> &tokens);
-    void run(string input);
+    string run(string input);
     void MoveWrite(string dir, string input);
     void Print(string current_state, int step);
+    string GetResult();
 };
 
 #endif

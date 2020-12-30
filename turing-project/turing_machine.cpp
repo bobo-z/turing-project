@@ -4,7 +4,7 @@
  * @Author: ybzhang
  * @Date: 2020-12-21 19:52:33
  * @LastEditors: ybzhang
- * @LastEditTime: 2020-12-24 03:35:55
+ * @LastEditTime: 2020-12-30 17:07:43
  */
 #include"common.h"
 #include"turing_machine.h"
@@ -189,7 +189,9 @@ void TuringMachine::Error(vector<string> err_str, int error_code)
             if(verbose)
             {
                 cerr << error_line << endl
-                     << "error: " << err_str[0] <<err_str[1]<< "' should be " << nTape << " characters" << endl;
+                     << " in file '" << filename
+                     << "' at line " << line_cnt << endl
+                     << "error: " << err_str[0] << err_str[1] << "' should be " << nTape << " characters" << endl;
             }
             break;
         case 14:
@@ -546,7 +548,7 @@ void TuringMachine::TokenSpilt(string str, vector<string>& tokens)
  *  input: the input string
  * @return void
  */
-void TuringMachine::run(string input)
+string TuringMachine::run(string input)
 {
     if(verbose)
         cout<<"Input: "<<input<<endl;
@@ -594,7 +596,7 @@ void TuringMachine::run(string input)
         auto it = final_states.find(current_state);
         if(it != final_states.end())//halt
         {
-            if(verbose)
+            /*if(verbose)
                 cout << "Result: ";
             for(auto i=tapes[0].begin(); i!=tapes[0].end();i++)
             {
@@ -604,12 +606,10 @@ void TuringMachine::run(string input)
             }
             cout << endl;
             if(verbose)
-                cout << end_line << endl;
-            return;
+                cout << end_line << endl;*/
+            return GetResult();
         }
         auto trans_it = transitions.find(current_state);//TODO: check
-        if(trans_it == transitions.end())
-            Error({current_state, "current_state"}, STATE_MISS);
         string current_symbol = "";
         for (int i = 0; i < nTape;i++)
         {
@@ -618,17 +618,43 @@ void TuringMachine::run(string input)
                 ch = blank;
             current_symbol = current_symbol + ch;
         }
+        if(trans_it == transitions.end())
+            //Error({current_state, "current_state"}, STATE_MISS);
+        {
+            cout << "Halted. No rule for state: '" << current_state <<"' and symbol: '"<<current_symbol<<"'"<< endl;
+            return GetResult();
+        }
         auto action_it = trans_it->second.find(current_symbol);//TODO check
         if(action_it == trans_it->second.end())
-            Error({current_symbol, "current_symbol"}, STATUS_MISS);
+            //Error({current_symbol, "current_symbol"}, STATUS_MISS);
+        {
+            cout << "Halted. No rule for state: '" << current_state <<"' and symbol: '"<<current_symbol<<"'"<< endl;
+            return GetResult();
+        }
         Action a = action_it->second;
         MoveWrite(a.direction, a.write);
         auto next_it = states.find(a.next);//TODO: check
         if(next_it == states.end())
-            Error({a.next, "next_state"}, STATE_MISS);
+            //Error({a.next, "next_state"}, STATE_MISS);
+        {
+            cout << "Halted. No rule for state: " << a.next << endl;
+            return GetResult();
+        }
         current_state = a.next;
         step += 1;
     }
+}
+
+string TuringMachine::GetResult()
+{
+    string res = "";
+    for(auto i=tapes[0].begin(); i!=tapes[0].end();i++)
+    {
+        char ch = (*i).symbol;
+        if(ch!=blank)
+            res = res + ch;
+    }
+    return res;
 }
 
 /**
