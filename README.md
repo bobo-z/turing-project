@@ -6,7 +6,9 @@
  * @LastEditors: ybzhang
  * @LastEditTime: 2020-12-30 11:14:50
 -->
-# 编译说明
+# NJU 2020fall FLA大作业
+图灵机模型
+## 编译说明
 * 方法一：在`turing-project`目录下执行`make`指令。
 * 方法二：在`turing-project`目录下执行指令
 >```
